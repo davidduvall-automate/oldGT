@@ -1,0 +1,44 @@
+
+    @pytest.mark.qa
+    @pytest.mark.first
+    def test_sourcing_history():
+        # disabled until SLD-6965 is resolved
+        # Setup parameters for a POST call
+        apiURI = '/Sourcing/History'
+   
+        filename = '/TL/testData/order/sourcinghistory.json'
+        result = app_setup.file.get_json_file(filename)
+   
+   
+   
+        # Sending post Request
+        response = requests.post(url=app_setup.https + app_setup.host_url + apiURI, headers=app_setup.auth, json=result,
+                                 timeout=7000)
+   
+        # Parse response to json format
+        json_response = json.loads(response.text)
+        # print(json_response)
+   
+        # verify model
+        model = jsonpath.jsonpath(json_response, 'model')
+        historymodel = app_util.verifyIdIsNotEmpty(model)
+        # print(historymodel)
+        app_setup.ts.mark(historymodel, "model Verified")
+   
+        # redo based on merge conflict
+        # # Commenting out the following while CC1 is not returning data. Until fixed.
+        # # verify origin
+        # origin = jsonpath.jsonpath(json_response, 'model[0].origin')
+        # originmodel = app_util.verifyIdIsNotEmpty(origin)
+        # # print(originmodel)
+        # app_setup.ts.mark(originmodel, "model origin Verified")
+        #
+        # # verify destination
+        # destination = jsonpath.jsonpath(json_response, 'model[0].destination')
+        # destinationmodel = app_util.verifyIdIsNotEmpty(destination)
+        # # print(destinationmodel)
+        # app_setup.ts.mark(destinationmodel, "model destination Verified")
+   
+        # verify response
+        Response = app_util.verifyTextMatch(str(response.status_code), str(200))
+        app_setup.ts.markFinal("test_sourcingHistory", Response, "Status Code 200 Verified")
