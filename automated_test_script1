@@ -1,0 +1,47 @@
+
+    @pytest.mark.qa
+    @pytest.mark.third
+    def test_get_booked_board():
+   
+        # Setup parameters for a POST call
+        apiURI = '/GetTlOrderBoard'
+        filename = '/TL/testData/order/getorderboard.json'
+        result = app_setup.file.get_json_file(filename)
+   
+       #6=booked
+        result['shipmentStatusFilterTypeId'] = 6
+   
+        # Sending post Request
+        response = requests.post(url=app_setup.https + app_setup.host_url + apiURI, headers=app_setup.auth, json=result,
+                                 timeout=7000)
+   
+        # Parse response to json format
+        json_response = json.loads(response.text)
+   
+        #print("Status Code is " + (str(response.status_code)))
+        #print(json_response)
+   
+        # verify model
+        model = jsonpath.jsonpath(json_response, 'model')
+        bookedboard_model = app_util.verifyIdIsNotEmpty(model)
+        app_setup.ts.mark(bookedboard_model, "TL-booked board model Verified")
+   
+        # Verify the BOL count 25 - for TL booked board
+        bolcount = jsonpath.jsonpath(json_response, 'model[*].billOfLading')
+        print(str(len(bolcount)))
+        count = app_util.verifyListCount(20, len(bolcount))
+        app_setup.ts.mark(count, "BOl count verified for TL booked board")
+   
+        # verify page size should not empty
+        pagesize = jsonpath.jsonpath(json_response, 'pageSize')
+        pagesizevalue = app_util.verifyIdIsNotEmpty(pagesize[0])
+        app_setup.ts.mark(pagesizevalue, "pagesize  is verified for TL booked board")
+   
+        # verify page number should not empty
+        pagenumber = jsonpath.jsonpath(json_response, 'pageNumber')
+        pagenumbervalue = app_util.verifyIdIsNotEmpty(pagenumber[0])
+        app_setup.ts.mark(pagenumbervalue, "pagenumber value is verified for booked board")
+   
+        # verify response
+        Response = app_util.verifyTextMatch(str(response.status_code), str(200))
+        app_setup.ts.markFinal("test_get_booked_board", Response, "Status Code 200 Verified")
