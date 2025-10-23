@@ -1,0 +1,125 @@
+import requests
+import jsonpath
+import json
+import pytest
+import time
+from utilities.read_json_file import read_file
+from utilities.util import app_util
+from utilities.teststatus import TestStatus
+from datetime import date
+import LTL.tests.test_submitquote as submitquote
+
+
+class setup_method:
+
+    def __init__(self):
+        # Create ts object to test status methods from TestStatus class
+        self.ts = TestStatus()
+
+        # Create file object to open file connection and read payload data
+        self.file = read_file()
+
+        token = 'token.json'
+        token_value = self.file.get_json_file(token)
+        # Extracting token value from token.json file
+        token = jsonpath.jsonpath(token_value, 'values[0].value')
+        # Set up auth header for post request
+        self.auth = {'Authorization': 'bearer ' + str(token[0])}
+        # print(self.auth)
+
+        # Getting development server url from json file
+        env = app_util.getEnvironment()
+        # print("The env variable is :"+str(env))
+        self.host_url = self.file.read_host_url(str(env) + 'salesorder')
+        self.host_url2 = self.file.read_host_url(str(env) + 'submitquote')
+        # Setup Http value to http variable
+        self.https = 'https://'
+
+
+app_setup = setup_method()
+
+@pytest.mark.qa
+@pytest.mark.first
+def test_get_TLorder_board_reliability():
+
+    # variable to count runs with 201 response code
+    good_count = 0
+
+    # Setup parameters for a POST call
+    apiURI = '/GetTlOrderBoard'
+
+    filename = '/TL/testData/order/getorderboard.json'
+    result = app_setup.file.get_json_file(filename)
+
+    # start time
+    tic = time.perf_counter()
+
+    # loop here
+    range_num = 10
+    for number in range(range_num):
+
+        # Sending post Request
+        response = requests.post(url=app_setup.https + app_setup.host_url + apiURI, headers=app_setup.auth, json=result,
+                                 timeout=7000)
+
+        # Parse response to json format
+        json_response = json.loads(response.text)
+        # print(json_response)
+
+        # separate actions for success and failure
+        if response.status_code > 200:
+            print("Status Code is " + (str(response.status_code)))
+            print(json_response)
+        else:
+            good_count += 1
+
+    toc = time.perf_counter()
+    realtime = toc - tic
+    print("Successful " + str(good_count) + " of " + str(range_num))
+    timepertest = realtime/range_num
+    print("In " + str(realtime) + " seconds.")
+    print("Or " + str(timepertest) + " per test.")
+
+
+@pytest.mark.qa
+@pytest.mark.second
+def est_TLcreateorder_reliability():
+    #global variables
+    global quoteBK, orderBK, bolNumber, carrierBK, quote, order
+
+    # variable to count runs with 201 response code
+    good_count = 0
+
+    # Setup parameters for a POST call
+    apiURI = '/Order/CreateOrder'
+
+    filename = '/TL/testData/order/createorder.json'
+    result = app_setup.file.get_json_file(filename)
+
+    # start time
+    tic = time.perf_counter()
+
+    # loop here
+    range_num = 10
+    for number in range(range_num):
+
+        # Sending Post Request
+        response = requests.post(url=app_setup.https + app_setup.host_url + apiURI, headers=app_setup.auth, json=result,
+                                 timeout=7000)
+       # Parse response to json format
+        json_response = json.loads(response.text)
+        # print(json_response)
+
+        # separate actions for success and failure
+        if response.status_code > 201:
+            print("Status Code is " + (str(response.status_code)))
+            print(json_response)
+        else:
+            good_count += 1
+
+    toc = time.perf_counter()
+    realtime = toc - tic
+    print("Successful " + str(good_count) + " of " + str(range_num))
+    timepertest = realtime/range_num
+    print("In " + str(realtime) + " seconds.")
+    print("Or " + str(timepertest) + " per test.")
